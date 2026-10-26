@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Band 10 harness</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #000; }
+  /* Band 10 panel: 212 x 520 physical px, designWidth 212 => 1 css px = 1 px. */
+  #screen {
+    position: relative; width: 212px; height: 520px; overflow: hidden;
+    background: #000; font-family: sans-serif;
+  }
+  /* Vela defaults: everything is a flex box (row), border-box sizing.
+     flex-shrink 0 so anything too big shows up as overflow in the checks
+     instead of being silently squeezed. */
+  #screen div, #screen span, #screen img {
+    box-sizing: border-box; display: flex; flex-direction: row;
+    flex-shrink: 0; position: relative;
+  }
+  #screen span { display: block; white-space: pre; font-size: 30px; color: #fff; }
+  /* For screenshots only: the panel is a full capsule (corner radius 106,
+     half the width). Grey outside it; the dashed line is the 103 px safe
+     outline the layout check enforces. */
+  #bezel {
+    position: absolute; left: 0; top: 0; width: 212px; height: 520px;
+    pointer-events: none; border-radius: 106px;
+    box-shadow: 0 0 0 200px #3a3a3a;
+  }
+  #safe {
+    position: absolute; left: 3px; top: 3px; width: 206px; height: 514px;
+    pointer-events: none; border-radius: 103px; box-sizing: border-box;
+    border: 1px dashed rgba(90, 200, 255, 0.55);
+  }
+  body.clean #safe { display: none; }
+</style>
+</head>
+<body>
+  <div id="screen"></div>
+  <div id="bezel"></div>
+  <div id="safe"></div>
+  <script type="module" src="/test/harness/runtime.js"></script>
+</body>
+</html>

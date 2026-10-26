@@ -1,0 +1,14 @@
+{
+  "name": "band-calc",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Basic calculator for the Xiaomi Smart Band 10 (Vela JS quick app)",
+  "scripts": {
+    "build": "aiot build",
+    "test": "node --test test/*.test.mjs",
+    "sheet": "python3 tools/contact_sheet.py test/screens contact-sheet.png"
+  },
+  "devDependencies": {
+    "aiot-toolkit": "2.0.5"
+  }
+}

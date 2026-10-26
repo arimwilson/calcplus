@@ -1,0 +1,415 @@
+<template>
+  <div class="page">
+    <div class="display">
+      <!-- Secret: AC five times in a row. Any key dismisses it. -->
+      <div class="secret" if="{{ secret }}">
+        <text id="secret-1" class="secret-line">Made with love</text>
+        <text id="secret-2" class="secret-line secret-by">by Ari Wilson.</text>
+      </div>
+      <div class="expr-row" if="{{ !secret }}">
+        <text id="expr" class="expr">{{ exprText }}</text>
+      </div>
+      <div class="main-row" if="{{ !secret }}">
+        <text id="main" class="main {{ error ? 'main-error' : '' }}" style="font-size: {{ mainSize }}px;">{{ mainText }}</text>
+      </div>
+    </div>
+
+    <!-- Two pages so the keys can be finger-sized: digits (3x4) and operators
+         (2x5). The orange key flips to the operators; every key there except
+         backspace flips back. Each key's whole cell, gaps included, is the
+         touch target; the rounded key inside it is what's drawn. The toolkit
+         has no :active, so touchstart/touchend set `down` for the pressed
+         look. The minus is drawn and backspace is an image: the band's font
+         may lack U+2212 and U+232B. -->
+    <div class="pad pad-digits" if="{{ pad === 'digits' }}">
+      <div class="row row-digits">
+        <div id="k-7" class="cell cell-digits" ontouchstart="touch('7')" ontouchend="release" ontouchcancel="release" onclick="press('7')">
+          <div class="key key-digits {{ down === '7' ? 'key-num-down' : 'key-num' }}"><text class="label">7</text></div>
+        </div>
+        <div id="k-8" class="cell cell-digits" ontouchstart="touch('8')" ontouchend="release" ontouchcancel="release" onclick="press('8')">
+          <div class="key key-digits {{ down === '8' ? 'key-num-down' : 'key-num' }}"><text class="label">8</text></div>
+        </div>
+        <div id="k-9" class="cell cell-digits" ontouchstart="touch('9')" ontouchend="release" ontouchcancel="release" onclick="press('9')">
+          <div class="key key-digits {{ down === '9' ? 'key-num-down' : 'key-num' }}"><text class="label">9</text></div>
+        </div>
+      </div>
+      <div class="row row-digits">
+        <div id="k-4" class="cell cell-digits" ontouchstart="touch('4')" ontouchend="release" ontouchcancel="release" onclick="press('4')">
+          <div class="key key-digits {{ down === '4' ? 'key-num-down' : 'key-num' }}"><text class="label">4</text></div>
+        </div>
+        <div id="k-5" class="cell cell-digits" ontouchstart="touch('5')" ontouchend="release" ontouchcancel="release" onclick="press('5')">
+          <div class="key key-digits {{ down === '5' ? 'key-num-down' : 'key-num' }}"><text class="label">5</text></div>
+        </div>
+        <div id="k-6" class="cell cell-digits" ontouchstart="touch('6')" ontouchend="release" ontouchcancel="release" onclick="press('6')">
+          <div class="key key-digits {{ down === '6' ? 'key-num-down' : 'key-num' }}"><text class="label">6</text></div>
+        </div>
+      </div>
+      <div class="row row-digits">
+        <div id="k-1" class="cell cell-digits" ontouchstart="touch('1')" ontouchend="release" ontouchcancel="release" onclick="press('1')">
+          <div class="key key-digits {{ down === '1' ? 'key-num-down' : 'key-num' }}"><text class="label">1</text></div>
+        </div>
+        <div id="k-2" class="cell cell-digits" ontouchstart="touch('2')" ontouchend="release" ontouchcancel="release" onclick="press('2')">
+          <div class="key key-digits {{ down === '2' ? 'key-num-down' : 'key-num' }}"><text class="label">2</text></div>
+        </div>
+        <div id="k-3" class="cell cell-digits" ontouchstart="touch('3')" ontouchend="release" ontouchcancel="release" onclick="press('3')">
+          <div class="key key-digits {{ down === '3' ? 'key-num-down' : 'key-num' }}"><text class="label">3</text></div>
+        </div>
+      </div>
+      <div class="row row-digits">
+        <div id="k-ops" class="cell cell-digits" ontouchstart="touch('ops')" ontouchend="release" ontouchcancel="release" onclick="press('ops')">
+          <div class="key key-digits {{ down === 'ops' ? 'key-fn-down' : 'key-fn' }}"><div class="ops-glyph">
+              <div class="ops-line"><text class="ops-sym">+</text><div class="ops-cell"><div class="minus-sm"></div></div></div>
+              <div class="ops-line"><text class="ops-sym">×</text><text class="ops-sym">÷</text></div>
+            </div></div>
+        </div>
+        <div id="k-0" class="cell cell-digits" ontouchstart="touch('0')" ontouchend="release" ontouchcancel="release" onclick="press('0')">
+          <div class="key key-digits {{ down === '0' ? 'key-num-down' : 'key-num' }}"><text class="label">0</text></div>
+        </div>
+        <div id="k-eq" class="cell cell-digits" ontouchstart="touch('=')" ontouchend="release" ontouchcancel="release" onclick="press('=')">
+          <div class="key key-digits {{ down === '=' ? 'key-eq-down' : 'key-eq' }}"><text class="label label-eq">=</text></div>
+        </div>
+      </div>
+    </div>
+    <div class="pad pad-ops" if="{{ pad === 'ops' }}">
+      <div class="row row-ops">
+        <div id="k-add" class="cell cell-ops" ontouchstart="touch('+')" ontouchend="release" ontouchcancel="release" onclick="press('+')">
+          <div class="key key-ops {{ down === '+' ? 'key-num-down' : 'key-num' }}"><text class="label label-op">+</text></div>
+        </div>
+        <div id="k-sub" class="cell cell-ops" ontouchstart="touch('-')" ontouchend="release" ontouchcancel="release" onclick="press('-')">
+          <div class="key key-ops {{ down === '-' ? 'key-num-down' : 'key-num' }}"><div class="minus"></div></div>
+        </div>
+      </div>
+      <div class="row row-ops">
+        <div id="k-mul" class="cell cell-ops" ontouchstart="touch('*')" ontouchend="release" ontouchcancel="release" onclick="press('*')">
+          <div class="key key-ops {{ down === '*' ? 'key-num-down' : 'key-num' }}"><text class="label label-op">×</text></div>
+        </div>
+        <div id="k-div" class="cell cell-ops" ontouchstart="touch('/')" ontouchend="release" ontouchcancel="release" onclick="press('/')">
+          <div class="key key-ops {{ down === '/' ? 'key-num-down' : 'key-num' }}"><text class="label label-op">÷</text></div>
+        </div>
+      </div>
+      <div class="row row-ops">
+        <div id="k-dot" class="cell cell-ops" ontouchstart="touch('.')" ontouchend="release" ontouchcancel="release" onclick="press('.')">
+          <div class="key key-ops {{ down === '.' ? 'key-num-down' : 'key-num' }}"><text class="label">.</text></div>
+        </div>
+        <div id="k-back" class="cell cell-ops" ontouchstart="touch('back')" ontouchend="release" ontouchcancel="release" onclick="press('back')">
+          <div class="key key-ops {{ down === 'back' ? 'key-num-down' : 'key-num' }}"><image class="back" src="/common/back.png"></image></div>
+        </div>
+      </div>
+      <div class="row row-ops">
+        <div id="k-neg" class="cell cell-ops" ontouchstart="touch('neg')" ontouchend="release" ontouchcancel="release" onclick="press('neg')">
+          <div class="key key-ops {{ down === 'neg' ? 'key-fn-down' : 'key-fn' }}"><text class="label label-fn">±</text></div>
+        </div>
+        <div id="k-pct" class="cell cell-ops" ontouchstart="touch('pct')" ontouchend="release" ontouchcancel="release" onclick="press('pct')">
+          <div class="key key-ops {{ down === 'pct' ? 'key-fn-down' : 'key-fn' }}"><text class="label label-fn">%</text></div>
+        </div>
+      </div>
+      <div class="row row-ops">
+        <div id="k-ac" class="cell cell-ops" ontouchstart="touch('ac')" ontouchend="release" ontouchcancel="release" onclick="press('ac')">
+          <div class="key key-ops {{ down === 'ac' ? 'key-fn-down' : 'key-fn' }}"><text class="label label-fn label-ac">AC</text></div>
+        </div>
+        <div id="k-digits" class="cell cell-ops" ontouchstart="touch('digits')" ontouchend="release" ontouchcancel="release" onclick="press('digits')">
+          <div class="key key-ops {{ down === 'digits' ? 'key-fn-down' : 'key-fn' }}"><text class="label label-123">123</text></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import storage from '@system.storage'
+import {
+  newCalc, press as pressKey, exprText, mainText, fitText, serialize, deserialize,
+  nextAcStreak, SECRET_AC_PRESSES
+} from '../../common/calc'
+
+var STORE_KEY = 'band-calc-state'
+var MAIN_W = 180
+var EXPR_W = 150
+var MAIN_SIZES = [40, 34, 28, 24, 20]
+var EXPR_SIZES = [15]
+
+// Held outside `private` so the framework doesn't make them reactive.
+var calc = newCalc()
+var acStreak = 0 // not saved: the secret never survives a relaunch
+
+export default {
+  private: {
+    exprText: '',
+    mainText: '0',
+    mainSize: 40,
+    error: false,
+    secret: false,
+    pad: 'digits', // not saved: the app always opens on the digits
+    down: ''
+  },
+
+  onInit() {
+    var page = this
+    calc = newCalc()
+    acStreak = 0
+    this.render()
+    try {
+      storage.get({
+        key: STORE_KEY,
+        default: '',
+        success: function (data) {
+          calc = deserialize(data)
+          page.render()
+        },
+        fail: function () {
+          page.render()
+        }
+      })
+    } catch (e) {
+      this.render()
+    }
+  },
+
+  onShow() {
+    this.render()
+  },
+
+  onHide() {
+    this.save()
+  },
+
+  onDestroy() {
+    this.save()
+  },
+
+  touch(key) {
+    this.down = key
+  },
+
+  release() {
+    this.down = ''
+  },
+
+  press(key) {
+    this.down = ''
+    // Page flips change nothing else, and don't break an AC streak.
+    if (key === 'ops' || key === 'digits') {
+      this.pad = key
+      return
+    }
+    // Backspace stays on the operator page so several digits can go.
+    if (this.pad === 'ops' && key !== 'back') this.pad = 'digits'
+    acStreak = nextAcStreak(acStreak, key)
+    if (acStreak >= SECRET_AC_PRESSES) {
+      acStreak = 0
+      this.secret = true
+    } else {
+      this.secret = false
+    }
+    var next = pressKey(calc, key)
+    if (next === calc) return
+    calc = next
+    // Saved on every change: the band can kill the app while the screen is off.
+    this.save()
+    this.render()
+  },
+
+  save() {
+    try {
+      storage.set({ key: STORE_KEY, value: serialize(calc) })
+    } catch (e) {}
+  },
+
+  render() {
+    var expr = fitText(exprText(calc), EXPR_SIZES, EXPR_W)
+    var main = fitText(mainText(calc), MAIN_SIZES, MAIN_W)
+    this.exprText = expr.text
+    this.mainText = main.text
+    this.mainSize = main.size
+    this.error = calc.error
+  }
+}
+</script>
+
+<style>
+.page {
+  width: 212px;
+  height: 520px;
+  flex-direction: column;
+  align-items: center;
+  background-color: #000000;
+}
+/* The lines are centred in the top of the capsule: right-aligned text would
+   run into its rounded corners. */
+.display {
+  margin-top: 36px;
+  width: 184px;
+  height: 72px;
+  flex-direction: column;
+  align-items: center;
+}
+.expr-row {
+  width: 150px;
+  height: 20px;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+.expr {
+  font-size: 15px;
+  color: #8c8c8c;
+  text-align: center;
+}
+.main-row {
+  margin-top: 4px;
+  width: 180px;
+  height: 48px;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+.main {
+  font-size: 40px;
+  color: #ffffff;
+  text-align: center;
+}
+.main-error {
+  color: #ff5a4f;
+}
+.secret {
+  width: 184px;
+  height: 72px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.secret-line {
+  font-size: 17px;
+  color: #ffffff;
+  text-align: center;
+}
+.secret-by {
+  margin-top: 4px;
+  color: #ff7a1a;
+}
+.pad {
+  margin-top: 4px;
+  height: 340px;
+  flex-direction: column;
+}
+.pad-digits {
+  width: 195px;
+}
+.pad-ops {
+  width: 196px;
+}
+.row {
+  flex-direction: row;
+}
+.row-digits {
+  width: 195px;
+  height: 85px;
+}
+.row-ops {
+  width: 196px;
+  height: 68px;
+}
+.cell {
+  justify-content: center;
+  align-items: center;
+}
+.cell-digits {
+  width: 65px;
+  height: 85px;
+}
+.cell-ops {
+  width: 98px;
+  height: 68px;
+}
+.key {
+  border-radius: 16px;
+  justify-content: center;
+  align-items: center;
+}
+.key-digits {
+  width: 61px;
+  height: 79px;
+}
+.key-ops {
+  width: 94px;
+  height: 62px;
+}
+.key-num {
+  background-color: #262626;
+}
+.key-num-down {
+  background-color: #484848;
+}
+.key-fn {
+  background-color: #3b3b3b;
+}
+.key-fn-down {
+  background-color: #5c5c5c;
+}
+.key-eq {
+  background-color: #ff7a1a;
+}
+.key-eq-down {
+  background-color: #ffa466;
+}
+.label {
+  font-size: 30px;
+  color: #ffffff;
+  text-align: center;
+}
+.label-op {
+  font-size: 32px;
+  color: #ff7a1a;
+}
+.label-eq {
+  font-size: 32px;
+}
+.label-fn {
+  font-size: 24px;
+}
+.label-ac {
+  font-size: 22px;
+  color: #ff7a1a;
+}
+.label-123 {
+  font-size: 18px;
+}
+.minus {
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+  background-color: #ff7a1a;
+}
+/* The orange key's glyph: + - over x / */
+.ops-glyph {
+  flex-direction: column;
+  align-items: center;
+}
+.ops-line {
+  height: 22px;
+  flex-direction: row;
+  align-items: center;
+}
+.ops-sym {
+  width: 18px;
+  font-size: 18px;
+  color: #ff7a1a;
+  text-align: center;
+}
+.ops-cell {
+  width: 18px;
+  height: 22px;
+  justify-content: center;
+  align-items: center;
+}
+.minus-sm {
+  width: 11px;
+  height: 2px;
+  border-radius: 1px;
+  background-color: #ff7a1a;
+}
+.back {
+  width: 26px;
+  height: 18px;
+}
+</style>
