@@ -158,6 +158,11 @@ export function pressClear() {
   return newCalc()
 }
 
+// Nothing for AC to clear: the state a fresh calculator starts in.
+export function isClear(s) {
+  return !s.tokens.length && s.entry === '0' && !s.locked && !s.history && !s.error
+}
+
 export function pressBack(s) {
   if (s.error || s.history) return newCalc()
   s = copy(s)
@@ -207,7 +212,8 @@ export function pressPercent(s) {
 // AC this many times in a row shows the credit line.
 export var SECRET_AC_PRESSES = 5
 
-// AC presses in a row, counting this key; any other key resets it.
+// AC presses in a row, counting this key; any other key, page flips
+// included, resets it.
 export function nextAcStreak(streak, key) {
   return key === 'ac' ? streak + 1 : 0
 }

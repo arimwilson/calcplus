@@ -15,12 +15,13 @@
     </div>
 
     <!-- Two pages so the keys can be finger-sized: digits (3x4) and operators
-         (2x5). The orange key flips to the operators; every key there except
-         backspace flips back. Each key's whole cell, gaps included, is the
-         touch target; the rounded key inside it is what's drawn. The toolkit
-         has no :active, so touchstart/touchend set `down` for the pressed
-         look. The minus is drawn and backspace is an image: the band's font
-         may lack U+2212 and U+232B. -->
+         (2x5). The orange key flips to the operators and 123, in the same
+         bottom-left spot, flips back; every other key there except backspace,
+         and AC with nothing to clear, flips back too. Each key's whole cell,
+         gaps included, is the touch target; the rounded key inside it is
+         what's drawn. The toolkit has no :active, so touchstart/touchend set
+         `down` for the pressed look. The minus is drawn and backspace is an
+         image: the band's font may lack U+2212 and U+232B. -->
     <div class="pad pad-digits" if="{{ pad === 'digits' }}">
       <div class="row row-digits">
         <div id="k-7" class="cell cell-digits" ontouchstart="touch('7')" ontouchend="release" ontouchcancel="release" onclick="press('7')">
@@ -104,11 +105,11 @@
         </div>
       </div>
       <div class="row row-ops">
-        <div id="k-ac" class="cell cell-ops" ontouchstart="touch('ac')" ontouchend="release" ontouchcancel="release" onclick="press('ac')">
-          <div class="key key-ops {{ down === 'ac' ? 'key-fn-down' : 'key-fn' }}"><text class="label label-fn label-ac">AC</text></div>
-        </div>
         <div id="k-digits" class="cell cell-ops" ontouchstart="touch('digits')" ontouchend="release" ontouchcancel="release" onclick="press('digits')">
           <div class="key key-ops {{ down === 'digits' ? 'key-fn-down' : 'key-fn' }}"><text class="label label-123">123</text></div>
+        </div>
+        <div id="k-ac" class="cell cell-ops" ontouchstart="touch('ac')" ontouchend="release" ontouchcancel="release" onclick="press('ac')">
+          <div class="key key-ops {{ down === 'ac' ? 'key-fn-down' : 'key-fn' }}"><text class="label label-fn label-ac">AC</text></div>
         </div>
       </div>
     </div>
@@ -118,7 +119,7 @@
 <script>
 import storage from '@system.storage'
 import {
-  newCalc, press as pressKey, exprText, mainText, fitText, serialize, deserialize,
+  newCalc, press as pressKey, isClear, exprText, mainText, fitText, serialize, deserialize,
   nextAcStreak, SECRET_AC_PRESSES
 } from '../../common/calc'
 
@@ -187,14 +188,15 @@ export default {
 
   press(key) {
     this.down = ''
-    // Page flips change nothing else, and don't break an AC streak.
+    acStreak = nextAcStreak(acStreak, key)
+    // Page flips change nothing else.
     if (key === 'ops' || key === 'digits') {
       this.pad = key
       return
     }
-    // Backspace stays on the operator page so several digits can go.
-    if (this.pad === 'ops' && key !== 'back') this.pad = 'digits'
-    acStreak = nextAcStreak(acStreak, key)
+    // Backspace stays on the operator page so several digits can go, and AC
+    // stays when there's nothing to clear so it can be pressed five times.
+    if (this.pad === 'ops' && key !== 'back' && !(key === 'ac' && isClear(calc))) this.pad = 'digits'
     if (acStreak >= SECRET_AC_PRESSES) {
       acStreak = 0
       this.secret = true

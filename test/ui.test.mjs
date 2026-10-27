@@ -57,7 +57,7 @@ const KEY_ID = {
   C: 'k-ac', '<': 'k-back', n: 'k-neg', '%': 'k-pct', D: 'k-digits'
 }
 const DIGIT_PAGE = ['k-7', 'k-8', 'k-9', 'k-4', 'k-5', 'k-6', 'k-1', 'k-2', 'k-3', 'k-ops', 'k-0', 'k-eq']
-const OPS_PAGE = ['k-add', 'k-sub', 'k-mul', 'k-div', 'k-dot', 'k-back', 'k-neg', 'k-pct', 'k-ac', 'k-digits']
+const OPS_PAGE = ['k-add', 'k-sub', 'k-mul', 'k-div', 'k-dot', 'k-back', 'k-neg', 'k-pct', 'k-digits', 'k-ac']
 
 // A "band": one page. reload() simulates the app being killed and relaunched
 // (localStorage, standing in for @system.storage, persists).
@@ -163,6 +163,26 @@ test('tapping the gap between two keys still presses a key', async (t) => {
   assert.equal(await b.main(), '5')
 })
 
+test('the page switch is bottom left on both pages, so one spot flips back and forth', async (t) => {
+  const b = await band(t)
+  await b.open()
+  const [ops] = await geometry(b, ['k-ops'])
+  // Near the bottom-left corner: inside +−×÷ here and 123 on the other page.
+  const x = ops.cell[0] + 10
+  const y = ops.cell[1] + ops.cell[3] - 10
+  for (const onOps of [true, false, true, false]) {
+    await b.page.mouse.click(x, y)
+    await b.settle()
+    assert.equal(await b.onOps(), onOps)
+  }
+  await b.tap('k-ops')
+  const [digits, ac] = await geometry(b, ['k-digits', 'k-ac'])
+  assert.ok(digits.cell[0] < ac.cell[0], 'AC is right of 123')
+  assert.equal(digits.cell[1], ac.cell[1], 'on the same row')
+  assert.equal(digits.cell[1] + digits.cell[3], ops.cell[1] + ops.cell[3], 'the bottom row')
+  assert.equal(await b.main(), '0', 'the flips did nothing else')
+})
+
 test('two pages: operators flip back, backspace stays, 123 returns', async (t) => {
   const b = await band(t)
   await b.open()
@@ -190,6 +210,10 @@ test('two pages: operators flip back, backspace stays, 123 returns', async (t) =
     await b.tap(id)
     assert.equal(await b.onOps(), false, id + ' flips back')
   }
+  assert.equal(await b.main(), '0')
+  await b.tap('k-ops')
+  await b.tap('k-ac')
+  assert.equal(await b.onOps(), true, 'AC with nothing to clear stays')
   await b.noErrors()
 })
 
@@ -471,12 +495,26 @@ test('secret: AC five times in a row shows the credit; any key dismisses it', as
   const b = await band(t)
   await b.open()
   const shown = () => b.page.evaluate(() => !!document.getElementById('secret-1'))
-  await b.keys('12+3CCCC')
-  assert.equal(await shown(), false, 'four is not enough')
+  const ac = async (n) => {
+    for (let i = 0; i < n; i++) await b.tap('k-ac')
+  }
+  await b.keys('12+3')
+  await b.tap('k-ops')
+  await ac(1)
   assert.equal(await b.main(), '0')
-  await b.keys('CC3CCC')
+  assert.equal(await b.onOps(), false, 'an AC that clears something flips back')
+  await b.tap('k-ops')
+  await ac(4)
+  assert.equal(await b.onOps(), true, 'with nothing to clear, AC stays put')
+  assert.equal(await shown(), false, 'four is not enough, and the flip restarted the count')
+  await b.tap('k-back')
+  await ac(4)
   assert.equal(await shown(), false, 'must be in a row')
-  await b.keys('CC')
+  await b.tap('k-digits')
+  await b.tap('k-ops')
+  await ac(4)
+  assert.equal(await shown(), false, 'a page flip breaks the row too')
+  await ac(1)
   assert.equal(await shown(), true)
   assert.equal(await b.text('secret-1'), 'Made with love')
   assert.equal(await b.text('secret-2'), 'by Ari Wilson.')
@@ -487,16 +525,23 @@ test('secret: AC five times in a row shows the credit; any key dismisses it', as
   assert.equal(await shown(), false)
   assert.equal(await b.main(), '7')
   // A sixth AC dismisses it too, and the count starts over.
-  await b.keys('CCCCC')
+  await b.tap('k-ops')
+  await ac(1) // clears the 7 and flips back
+  await b.tap('k-ops')
+  await ac(5)
   assert.equal(await shown(), true)
-  await b.keys('C')
+  await ac(1)
   assert.equal(await shown(), false)
-  await b.keys('CCCC')
+  await ac(4)
   assert.equal(await shown(), true, '5 counted from the dismissing AC')
   // Not remembered across a relaunch.
   await b.kill()
   assert.equal(await shown(), false)
   assert.equal(await b.main(), '0')
+  // From a fresh start it's +−×÷, then AC five times.
+  await b.tap('k-ops')
+  await ac(5)
+  assert.equal(await shown(), true)
   await b.noErrors()
 })
 

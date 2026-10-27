@@ -143,6 +143,16 @@ test('AC clears everything', () => {
   assert.deepEqual(s, c.newCalc())
 })
 
+test('isClear: only when AC would have nothing to clear', () => {
+  assert.equal(c.isClear(c.newCalc()), true)
+  assert.equal(c.isClear(run('2+3*C')), true)
+  for (const keys of ['5', '0.', '5+', '5-5=', '8/0=', '7<', '0=']) {
+    assert.equal(c.isClear(run(keys)), keys === '7<' || keys === '0=', keys)
+  }
+  assert.equal(c.isClear(c.press(c.newCalc(), 'neg')), false, '-0')
+  assert.equal(c.isClear(c.deserialize(c.serialize(c.newCalc()))), true, 'after a relaunch')
+})
+
 test('backspace', () => {
   assert.equal(main('123<'), '12')
   assert.equal(main('1<'), '0')
@@ -267,6 +277,8 @@ test('AC streak counts AC presses in a row', () => {
   assert.equal(n, 4)
   assert.equal(c.nextAcStreak(n, 'ac'), c.SECRET_AC_PRESSES)
   assert.equal(c.nextAcStreak(n, 'back'), 0)
+  assert.equal(c.nextAcStreak(n, 'ops'), 0, 'page flips break it too')
+  assert.equal(c.nextAcStreak(n, 'digits'), 0)
 })
 
 test('= again repeats the last operation', () => {

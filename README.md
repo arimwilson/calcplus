@@ -16,11 +16,13 @@ build machine.
   per key.
   - **Digit page** (3×4): `7 8 9 / 4 5 6 / 1 2 3 / [+−×÷] 0 =`. Keys are
     61×79 px, about 4.8×6.2 mm.
-  - **Operator page** (2×5): `+ − / × ÷ / . ⌫ / ± % / AC 123`. Keys are
+  - **Operator page** (2×5): `+ − / × ÷ / . ⌫ / ± % / 123 AC`. Keys are
     94×62 px, about 7.4×4.8 mm.
-  - The orange `+−×÷` key flips to the operator page. Every key there flips
-    back to the digits after doing its job, except `⌫`, which stays so you
-    can delete several digits. `123` flips back without doing anything.
+  - The orange `+−×÷` key flips to the operator page, and `123`, in the same
+    bottom-left spot, flips back without doing anything, so one spot toggles
+    the pages. Every other key there flips back to the digits after doing
+    its job, except `⌫`, which stays so you can delete several digits, and
+    AC when there's nothing left to clear, so it can be pressed again.
   - Each key's whole grid cell, gaps included, is its touch target.
   - The app always opens on the digit page.
   - `128+3×45=` takes 11 taps: one extra per operator, and for `.`.
@@ -60,10 +62,11 @@ build machine.
 - State is saved on every key press and restored on launch, so it survives
   the band killing the app.
 - Secret: press AC five times in a row and the display shows "Made with
-  love / by Ari Wilson." AC is on the operator page, so it takes `+−×÷`, AC,
-  five times; the page flips don't break the count. The next key press
-  dismisses it and still does its job. Any other key in between restarts
-  the count. It isn't saved, so it's gone after a relaunch.
+  love / by Ari Wilson." From a cleared calculator that's `+−×÷`, then AC
+  five times. If the first AC clears something, it flips back to the digits
+  as usual: tap `+−×÷` and AC five more times. Any other key in between,
+  page flips included, restarts the count. The next key press dismisses it
+  and still does its job. It isn't saved, so it's gone after a relaunch.
 
 `−` on its keys is a drawn bar, and `⌫` is a small PNG, because the band's
 font may lack U+2212 and U+232B. In the expression and result lines, minus is
@@ -72,7 +75,7 @@ the ASCII hyphen for the same reason.
 ## Install on the band
 
 Install the debug package from `npm run build`:
-`dist/com.ariwilson.bandcalc.debug.2.0.0.rpk`. It's the only kind that can
+`dist/com.ariwilson.bandcalc.debug.2.1.0.rpk`. It's the only kind that can
 be sideloaded; don't use `aiot release`.
 
 Pick one (all unofficial; Xiaomi offers no public sideload):
